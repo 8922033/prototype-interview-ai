@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototype Interview AI</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+}
+
+/* ヘッダー */
+header {
+    background: #2563eb;
+    color: white;
+    padding: 12px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* メイン2カラム */
+.wrapper {
+    display: flex;
+    height: calc(100vh - 50px);
+}
+
+/* 左パネル */
+.left {
+    width: 320px;
+    background: white;
+    border-right: 1px solid #ddd;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+/* 右パネル */
+.right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* チャットエリア */
+.chat {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+/* 入力エリア */
+.input-area {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background: white;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 6px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+/* チャットバブル */
+.msg {
+    max-width: 70%;
+    padding: 10px;
+    margin: 8px;
+    border-radius: 10px;
+    white-space: pre-wrap;
+}
+
+.user {
+    background: #dbeafe;
+    margin-left: auto;
+    text-align: right;
+}
+
+.ai {
+    background: #e5e7eb;
+    margin-right: auto;
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+Prototype Interview AI
+</header>
+
+<div class="wrapper">
+
+<!-- 左：設定 -->
+<div class="left">
+
+<h3>設定</h3>
+
+<label>画像</label>
+<input type="file" id="image">
+
+<label>URL</label>
+<input type="text" id="url">
+
+<label>質問（1行ずつ）</label>
+<textarea id="questions" rows="6"></textarea>
+
+<label>性格</label>
+<select id="personality">
+<option value="active">積極的</option>
+<option value="passive">受け身</option>
+</select>
+
+<button onclick="startInterview()">インタビュー開始</button>
+
+</div>
+
+<!-- 右：チャット -->
+<div class="right">
+
+<div class="chat" id="chat"></div>
+
+<div class="input-area">
+    <input type="text" id="input" placeholder="入力...">
+    <button onclick="send()">送信</button>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+let history = [];
+
+let imageBase64 = "";
+let mimeType = "image/png";
+
+/* 画像 */
+document.getElementById("image").addEventListener("change", function(e) {
+
+    const file = e.target.files[0];
+    if (!file) return;
+
+    mimeType = file.type;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        imageBase64 = evt.target.result.split(",")[1];
+    };
+
+    reader.readAsDataURL(file);
+
+});
+
+/* メッセージ追加 */
+function addMsg(text, type) {
+
+    const div = document.createElement("div");
+    div.className = "msg " + type;
+    div.innerText = text;
+
+    document.getElementById("chat").appendChild(div);
+
+    document.getElementById("chat").scrollTop =
+        document.getElementById("chat").scrollHeight;
+}
+
+/* インタビュー開始 */
+function startInterview() {
+
+    addMsg("インタビューを開始します。", "ai");
+
+}
+
+/* 送信 */
+async function send() {
+
+    const inputEl = document.getElementById("input");
+
+    const text = inputEl.value;
+    if (!text) return;
+
+    addMsg(text, "user");
+
+    history.push({
+        role: "user",
+        content: text
+    });
+
+    inputEl.value = "";
+
+    const res = await fetch("/chat", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+
+            personality: document.getElementById("personality").value,
+            prototype_image: imageBase64,
+            prototype_image_mime_type: mimeType,
+            prototype_url: document.getElementById("url").value,
+            questions: document.getElementById("questions").value
+                .split("\n")
+                .filter(q => q.trim() !== ""),
+            history
+
+        })
+
+    });
+
+    const data = await res.json();
+
+    addMsg(data.message, "ai");
+
+    history.push({
+        role: "assistant",
+        content: data.message
+    });
+
+}
+
+</script>
+
+</body>
+</html>

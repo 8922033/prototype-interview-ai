@@ -1,67 +1,39 @@
 import os
-import base64
-
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from google import genai
 
-# =========================
-# 環境変数
-# =========================
-
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY が設定されていません")
-
-client = genai.Client(api_key=GEMINI_API_KEY)
-
-# =========================
-# Flask
-# =========================
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "dev_key")
 
-app.secret_key = os.getenv(
-    "SECRET_KEY",
-    "prototype_interview_ai"
-)
-
-# =========================
-# ルート
-# =========================
-
+# -------------------------
+# トップページ
+# -------------------------
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# =========================
-# システムプロンプト
-# =========================
 
+# -------------------------
+# プロンプト
+# -------------------------
 def build_system_prompt(personality, questions, url):
 
-    personality_text = ""
-
     if personality == "active":
-        personality_text = """
-ユーザーは積極的に話すタイプです。
-会話を広げながら自然に深掘りしてください。
-"""
+        personality_text = "ユーザーは積極的。会話を広げて深掘りする。"
     else:
-        personality_text = """
-ユーザーは受け身です。
-短く質問し、一問一答で進めてください。
-"""
+        personality_text = "ユーザーは受け身。短く質問し一問一答で進める。"
 
     q_text = "\n".join([f"{i+1}. {q}" for i, q in enumerate(questions)])
 
     return f"""
 あなたはプロトタイプ評価インタビューAIです。
 
-目的：ユーザーの使用感を引き出す
+目的：使用感の深い理解
 
 {personality_text}
 
@@ -71,19 +43,15 @@ def build_system_prompt(personality, questions, url):
 【プロトタイプURL】
 {url}
 
-必要に応じて
-- 理由
-- 具体例
-- 改善点
-を深掘りしてください。
-
-会話を自然に進めてください。
+・自然な会話で進める
+・浅い回答は深掘りする
+・話題逸脱は戻す
 """
 
-# =========================
-# チャットAPI
-# =========================
 
+# -------------------------
+# チャットAPI
+# -------------------------
 @app.route("/chat", methods=["POST"])
 def chat():
 
@@ -95,34 +63,28 @@ def chat():
         history = data.get("history", [])
         url = data.get("prototype_url", "")
 
-        image_base64 = data.get("prototype_image", "")
-        mime_type = data.get("prototype_image_mime_type", "image/png")
+        images = data.get("prototype_images", [])
 
         system_prompt = build_system_prompt(personality, questions, url)
 
         contents = []
 
-        # システム
+        # system
         contents.append({
             "role": "user",
             "parts": [{"text": system_prompt}]
         })
 
-        # 画像
-        if image_base64:
+        # 画像（複数対応）
+        for img in images:
             contents.append({
                 "role": "user",
-                "parts": [
-                    {
-                        "inline_data": {
-                            "mime_type": mime_type,
-                            "data": image_base64
-                        }
-                    },
-                    {
-                        "text": "この画像はプロトタイプです。内容を理解してください。"
+                "parts": [{
+                    "inline_data": {
+                        "mime_type": img.get("mime_type", "image/png"),
+                        "data": img.get("data")
                     }
-                ]
+                }]
             })
 
         # 履歴
@@ -131,9 +93,6 @@ def chat():
                 "role": h.get("role", "user"),
                 "parts": [{"text": h.get("content", "")}]
             })
-
-        # ユーザー最新発話
-        user_text = history[-1]["content"] if history else ""
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -154,13 +113,5 @@ def chat():
         }), 500
 
 
-# =========================
-# 起動
-# =========================
-
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+    app.run(debug=True)

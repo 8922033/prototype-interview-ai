@@ -3,149 +3,86 @@
 
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prototype Interview AI</title>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-}
+body { margin:0; font-family:Arial; background:#f4f6f8; }
 
-/* ヘッダー */
-header {
-    background: #2563eb;
-    color: white;
-    padding: 12px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-}
+.wrapper { display:flex; height:100vh; }
 
-/* メイン2カラム */
-.wrapper {
-    display: flex;
-    height: calc(100vh - 50px);
-}
-
-/* 左パネル */
 .left {
-    width: 320px;
-    background: white;
-    border-right: 1px solid #ddd;
-    padding: 15px;
-    overflow-y: auto;
+    width:320px;
+    background:white;
+    padding:15px;
+    border-right:1px solid #ddd;
+    overflow:auto;
 }
 
-/* 右パネル */
 .right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    flex:1;
+    display:flex;
+    flex-direction:column;
 }
 
-/* チャットエリア */
 .chat {
-    flex: 1;
-    padding: 15px;
-    overflow-y: auto;
+    flex:1;
+    padding:10px;
+    overflow:auto;
 }
 
-/* 入力エリア */
 .input-area {
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-    background: white;
+    display:flex;
+    border-top:1px solid #ddd;
 }
 
-input, textarea, select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 6px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-}
-
-button {
-    width: 100%;
-    padding: 10px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-button:hover {
-    opacity: 0.9;
-}
-
-/* チャットバブル */
 .msg {
-    max-width: 70%;
-    padding: 10px;
-    margin: 8px;
-    border-radius: 10px;
-    white-space: pre-wrap;
+    margin:8px;
+    padding:10px;
+    border-radius:8px;
+    max-width:70%;
 }
 
-.user {
-    background: #dbeafe;
-    margin-left: auto;
-    text-align: right;
-}
+.user { background:#dbeafe; margin-left:auto; }
+.ai { background:#e5e7eb; }
 
-.ai {
-    background: #e5e7eb;
-    margin-right: auto;
-}
+button { width:100%; padding:10px; }
+input, textarea, select { width:100%; margin:6px 0; }
 </style>
 
 </head>
 
 <body>
 
-<header>
-Prototype Interview AI
-</header>
-
 <div class="wrapper">
 
-<!-- 左：設定 -->
+<!-- 左 -->
 <div class="left">
 
 <h3>設定</h3>
 
-<label>画像</label>
-<input type="file" id="image">
+<input type="file" id="image" multiple>
 
-<label>URL</label>
-<input type="text" id="url">
+<input type="text" id="url" placeholder="URL">
 
-<label>質問（1行ずつ）</label>
-<textarea id="questions" rows="6"></textarea>
+<textarea id="questions" placeholder="質問（1行ずつ）"></textarea>
 
-<label>性格</label>
 <select id="personality">
 <option value="active">積極的</option>
 <option value="passive">受け身</option>
 </select>
 
-<button onclick="startInterview()">インタビュー開始</button>
+<button onclick="start()">開始</button>
 
 </div>
 
-<!-- 右：チャット -->
+<!-- 右 -->
 <div class="right">
 
 <div class="chat" id="chat"></div>
 
 <div class="input-area">
-    <input type="text" id="input" placeholder="入力...">
-    <button onclick="send()">送信</button>
+<input id="input">
+<button onclick="send()">送信</button>
 </div>
 
 </div>
@@ -155,96 +92,78 @@ Prototype Interview AI
 <script>
 
 let history = [];
+let images = [];
 
-let imageBase64 = "";
-let mimeType = "image/png";
+document.getElementById("image").addEventListener("change", function(e){
 
-/* 画像 */
-document.getElementById("image").addEventListener("change", function(e) {
+    images = [];
 
-    const file = e.target.files[0];
-    if (!file) return;
+    Array.from(e.target.files).forEach(file => {
 
-    mimeType = file.type;
+        const reader = new FileReader();
 
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-        imageBase64 = evt.target.result.split(",")[1];
-    };
+        reader.onload = function(evt) {
 
-    reader.readAsDataURL(file);
+            images.push({
+                data: evt.target.result.split(",")[1],
+                mime_type: file.type
+            });
+
+        };
+
+        reader.readAsDataURL(file);
+
+    });
 
 });
 
-/* メッセージ追加 */
-function addMsg(text, type) {
-
+function add(text, type){
     const div = document.createElement("div");
     div.className = "msg " + type;
     div.innerText = text;
-
     document.getElementById("chat").appendChild(div);
-
-    document.getElementById("chat").scrollTop =
-        document.getElementById("chat").scrollHeight;
 }
 
-/* インタビュー開始 */
-function startInterview() {
-
-    addMsg("インタビューを開始します。", "ai");
-
+function start(){
+    add("インタビュー開始", "ai");
 }
 
-/* 送信 */
-async function send() {
+async function send(){
 
-    const inputEl = document.getElementById("input");
+    const text = document.getElementById("input").value;
+    if(!text) return;
 
-    const text = inputEl.value;
-    if (!text) return;
-
-    addMsg(text, "user");
+    add(text, "user");
 
     history.push({
-        role: "user",
-        content: text
+        role:"user",
+        content:text
     });
 
-    inputEl.value = "";
-
     const res = await fetch("/chat", {
-
-        method: "POST",
-
-        headers: {
-            "Content-Type": "application/json"
-        },
-
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({
-
             personality: document.getElementById("personality").value,
-            prototype_image: imageBase64,
-            prototype_image_mime_type: mimeType,
             prototype_url: document.getElementById("url").value,
-            questions: document.getElementById("questions").value
-                .split("\n")
+            questions: document.getElementById("questions")
+                .value.split("\n")
                 .filter(q => q.trim() !== ""),
+            prototype_images: images,
             history
-
         })
-
     });
 
     const data = await res.json();
 
-    addMsg(data.message, "ai");
+    add(data.message, "ai");
 
     history.push({
-        role: "assistant",
-        content: data.message
+        role:"assistant",
+        content:data.message
     });
 
+    document.getElementById("input").value = "";
 }
 
 </script>

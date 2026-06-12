@@ -167,8 +167,15 @@ async function start() {
         alert(data.message);
         return;
     }
+     
+// 開始指示も履歴に保存
+    history.push({
+    role: "user",
+    content:
+        "インタビューを開始してください。まずあなたから簡単に挨拶をして、その後すぐに最初の質問をしてください。"
+});
 
-    // AIの最初の発言を表示
+ // AIの最初の発言を表示
     add(data.message, "ai");
 
     // 履歴に保存

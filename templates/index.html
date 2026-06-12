@@ -124,8 +124,59 @@ function add(text, type){
     document.getElementById("chat").appendChild(div);
 }
 
-function start(){
-    add("インタビュー開始", "ai");
+async function start() {
+
+    // チャットをリセット
+    document.getElementById("chat").innerHTML = "";
+
+    // 履歴をリセット
+    history = [];
+
+    const res = await fetch("/chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+
+            personality: document.getElementById("personality").value,
+
+            prototype_url: document.getElementById("url").value,
+
+            questions: document.getElementById("questions")
+                .value
+                .split("\n")
+                .filter(q => q.trim() !== ""),
+
+            prototype_images: images,
+
+            history: [
+                {
+                    role: "user",
+                    content:
+                        "インタビューを開始してください。まずあなたから簡単に挨拶をして、その後すぐに最初の質問をしてください。"
+                }
+            ]
+
+        })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+        alert(data.message);
+        return;
+    }
+
+    // AIの最初の発言を表示
+    add(data.message, "ai");
+
+    // 履歴に保存
+    history.push({
+        role: "assistant",
+        content: data.message
+    });
+
 }
 
 async function send(){

@@ -37,6 +37,8 @@ def build_system_prompt(personality, questions, url):
         personality_text = """
 【インタビュイーのペルソナ】
 
+・女性
+・東京理科大学経営学部2年生
 ・自分から話すことが多い
 ・初対面の人とも仲良くなれる
 ・思い立ったことをすぐ口に出す
@@ -154,11 +156,14 @@ def build_system_prompt(personality, questions, url):
 
 【ルール】
 
-・インタビュー開始時は、AIが自ら会話を開始すること。
+・インタビュー開始時はAIが自ら会話を開始する。
 
-・最初に短い挨拶を行い、その直後に最初の質問を自然に行うこと。
+・開始時は短い挨拶をしたあと、
+自然に最初の質問を行う。
 
-・ユーザーから最初の発話を待たないこと。
+・ペルソナとして与えられている
+学年や性別などは既知情報として扱い、
+改めて質問しない。
 
 ・質問項目をベースに自然な会話を行う。
 
@@ -168,13 +173,15 @@ def build_system_prompt(personality, questions, url):
 
 ・回答が浅い場合のみ深掘りする。
 
-・十分答えている場合は次へ進む。
+・十分答えている場合は
+次へ進む。
 
 ・回答内容から追加質問を考える。
 
 ・同じ質問を繰り返さない。
 
-・AIらしい文章ではなく、人間のインタビュアーのように話す。
+・AIらしい文章ではなく、
+人間のインタビュアーのように話す。
 
 ・プロトタイプの良い点、
 悪い点、
@@ -182,8 +189,6 @@ def build_system_prompt(personality, questions, url):
 利用シーン、
 迷った点、
 印象などを引き出す。
-```
-
 """
 
     return system_prompt
@@ -278,6 +283,11 @@ def chat():
                 "user"
             )
 
+            # JavaScriptのassistantを
+            # Gemini用のmodelへ変換
+            if role == "assistant":
+                role = "model"
+
             text = item.get(
                 "content",
                 ""
@@ -308,7 +318,10 @@ def chat():
         )
 
         if not answer:
-            answer = "申し訳ありません。応答を生成できませんでした。"
+            answer = (
+                "申し訳ありません。"
+                "応答を生成できませんでした。"
+            )
 
         return jsonify({
             "success": True,
@@ -323,8 +336,6 @@ def chat():
             "success": False,
             "message": str(e)
         }), 500
-
-
 # =========================
 # 起動
 # =========================
@@ -333,5 +344,13 @@ if __name__ == "__main__":
     app.run(
         debug=True,
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000))
+        port=int(
+            os.environ.get(
+                "PORT",
+                5000
+            )
+        )
     )
+
+
+

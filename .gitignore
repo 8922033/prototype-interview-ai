@@ -2,3 +2,4 @@
 uploads/
 __pycache__/
 *.pyc
+database/app.db

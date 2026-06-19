@@ -18,7 +18,12 @@ from flask_login import (
     login_required,
     current_user
 )
-from models import db, User
+from models import (
+    db,
+    User,
+    Conversation,
+    Message
+)
 
 # =========================
 # 環境変数読み込み
@@ -142,6 +147,64 @@ def logout():
     return redirect(
         url_for("login")
     )
+@app.route(
+    "/conversation/new",
+    methods=["POST"]
+)
+@login_required
+def new_conversation():
+
+    conversation = Conversation(
+
+        title="新しいチャット",
+
+        user_id=current_user.id
+
+    )
+
+    db.session.add(
+        conversation
+    )
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True,
+
+        "conversation_id":
+            conversation.id
+
+    })
+@app.route(
+    "/conversations"
+)
+@login_required
+def conversations():
+
+    data = Conversation.query.filter_by(
+
+        user_id=current_user.id
+
+    ).order_by(
+
+        Conversation.created_at.desc()
+
+    ).all()
+
+    result = []
+
+    for c in data:
+
+        result.append({
+
+            "id": c.id,
+
+            "title": c.title
+
+        })
+
+    return jsonify(result)
 # =========================
 # システムプロンプト生成
 # =========================

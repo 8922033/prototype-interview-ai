@@ -36,7 +36,6 @@ class User(UserMixin, db.Model):
         default=datetime.utcnow
     )
 
-
 class Conversation(db.Model):
 
     __tablename__ = "conversations"
@@ -46,25 +45,21 @@ class Conversation(db.Model):
         primary_key=True
     )
 
-    user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("users.id"),
-        nullable=False
-    )
-
     title = db.Column(
-        db.String(300),
+        db.String(200),
+        nullable=False,
         default="新しいチャット"
     )
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        server_default=db.func.now()
     )
 
-    updated_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
     )
 
 
@@ -75,12 +70,6 @@ class Message(db.Model):
     id = db.Column(
         db.Integer,
         primary_key=True
-    )
-
-    conversation_id = db.Column(
-        db.Integer,
-        db.ForeignKey("conversations.id"),
-        nullable=False
     )
 
     role = db.Column(
@@ -95,5 +84,11 @@ class Message(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        server_default=db.func.now()
+    )
+
+    conversation_id = db.Column(
+        db.Integer,
+        db.ForeignKey("conversations.id"),
+        nullable=False
     )

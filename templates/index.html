@@ -58,6 +58,16 @@ input, textarea, select { width:100%; margin:6px 0; }
 <!-- 左 -->
 <div class="left">
 
+<h3>チャット履歴</h3>
+
+<button onclick="start()">
+＋ 新しいチャット
+</button>
+
+<div id="historyList"></div>
+
+<hr>
+
 <h3>設定</h3>
 
 <input type="file" id="image" multiple>
@@ -126,6 +136,48 @@ function add(text, type){
     document.getElementById("chat").appendChild(div);
 }
 
+async function loadConversations() {
+
+    const res =
+        await fetch(
+            "/conversations"
+        );
+
+    const data =
+        await res.json();
+
+    const area =
+        document.getElementById(
+            "historyList"
+        );
+
+    area.innerHTML = "";
+
+    data.forEach(c => {
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+        div.style.padding =
+            "8px";
+
+        div.style.cursor =
+            "pointer";
+
+        div.style.borderBottom =
+            "1px solid #ddd";
+
+        div.innerText =
+            c.title;
+
+        area.appendChild(div);
+
+    });
+
+}
+
 async function start() {
 const newChat = await fetch(
     "/conversation/new",
@@ -139,6 +191,7 @@ const newChatData =
 
 conversationId =
     newChatData.conversation_id;
+    await loadConversations();
     // チャットをリセット
     document.getElementById("chat").innerHTML = "";
 
@@ -237,6 +290,8 @@ async function send(){
 
     document.getElementById("input").value = "";
 }
+
+loadConversations();
 
 </script>
 

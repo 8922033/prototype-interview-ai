@@ -205,6 +205,45 @@ def conversations():
         })
 
     return jsonify(result)
+@app.route(
+    "/conversation/<int:conversation_id>"
+)
+@login_required
+def get_conversation(
+    conversation_id
+):
+
+    conversation = Conversation.query.filter_by(
+
+        id=conversation_id,
+
+        user_id=current_user.id
+
+    ).first()
+
+    if not conversation:
+
+        return jsonify([])
+
+    messages = Message.query.filter_by(
+
+        conversation_id=conversation.id
+
+    ).all()
+
+    result = []
+
+    for m in messages:
+
+        result.append({
+
+            "role": m.role,
+
+            "content": m.content
+
+        })
+
+    return jsonify(result)
 # =========================
 # システムプロンプト生成
 # =========================

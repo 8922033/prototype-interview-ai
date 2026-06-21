@@ -172,7 +172,43 @@ async function loadConversations() {
         div.innerText =
             c.title;
 
-        area.appendChild(div);
+        div.onclick =
+    async function() {
+
+        conversationId =
+            c.id;
+
+        const res =
+            await fetch(
+                "/conversation/" +
+                c.id
+            );
+
+        const messages =
+            await res.json();
+
+        history = messages;
+
+        document.getElementById(
+            "chat"
+        ).innerHTML = "";
+
+        messages.forEach(m => {
+
+            add(
+
+                m.content,
+
+                m.role === "user"
+                ? "user"
+                : "ai"
+
+            );
+
+        });
+
+    };
+            area.appendChild(div);
 
     });
 

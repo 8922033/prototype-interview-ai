@@ -749,11 +749,16 @@ def build_system_prompt(personality, questions, url):
 # =========================
 
 @app.route("/chat", methods=["POST"])
+@login_required
 def chat():
 
     try:
 
         data = request.get_json()
+
+        conversation_id = data.get(
+            "conversation_id"
+        )
 
         personality = data.get(
             "personality",
@@ -780,10 +785,26 @@ def chat():
             []
         )
 
+        conversation = None
+
+        if conversation_id:
+
+            conversation = Conversation.query.filter_by(
+
+                id=conversation_id,
+
+                user_id=current_user.id
+
+            ).first()
+
         system_prompt = build_system_prompt(
+
             personality,
+
             questions,
+
             prototype_url
+
         )
 
         contents = []
@@ -793,35 +814,54 @@ def chat():
         # ---------------------
 
         contents.append({
-            "role": "user",
-            "parts": [
-                {
-                    "text": system_prompt
-                }
-            ]
-        })
 
-        # ---------------------
+            "role": "user",
+
+            "parts": [
+
+                {
+
+                    "text": system_prompt
+
+                }
+
+            ]
+
+        })
+                # ---------------------
         # プロトタイプ画像
         # ---------------------
 
         for image in prototype_images:
 
             if (
+
                 image.get("data")
+
                 and image.get("mime_type")
+
             ):
 
                 contents.append({
+
                     "role": "user",
+
                     "parts": [
+
                         {
+
                             "inline_data": {
+
                                 "mime_type": image["mime_type"],
+
                                 "data": image["data"]
+
                             }
+
                         }
+
                     ]
+
                 })
 
         # ---------------------
@@ -831,53 +871,167 @@ def chat():
         for item in history:
 
             role = item.get(
+
                 "role",
+
                 "user"
+
             )
 
-            # JavaScriptのassistantを
-            # Gemini用のmodelへ変換
             if role == "assistant":
+
                 role = "model"
 
             text = item.get(
+
                 "content",
+
                 ""
+
             )
 
             contents.append({
+
                 "role": role,
+
                 "parts": [
+
                     {
+
                         "text": text
+
                     }
+
                 ]
+
             })
 
         # ---------------------
+        # ユーザー発言を保存
+        # ---------------------
+
+        if conversation and history:
+
+            last = history[-1]
+
+            if last.get("role") == "user":
+
+                db.session.add(
+
+                    Message(
+
+                        role="user",
+
+                        content=last.get(
+
+                            "content",
+
+                            ""
+
+                        ),
+
+                        conversation_id=conversation.id
+
+                    )
+
+                )
+
+                db.session.commit()
+                        # ---------------------
         # Gemini呼び出し
         # ---------------------
 
         response = client.models.generate_content(
+
             model="gemini-2.5-flash",
+
             contents=contents
+
         )
 
         answer = getattr(
+
             response,
+
             "text",
+
             None
+
         )
 
         if not answer:
+
             answer = (
+
                 "申し訳ありません。"
+
                 "応答を生成できませんでした。"
+
             )
 
+        # ---------------------
+        # AIの返答を保存
+        # ---------------------
+
+        if conversation:
+
+            db.session.add(
+
+                Message(
+
+                    role="assistant",
+
+                    content=answer,
+
+                    conversation_id=conversation.id
+
+                )
+
+            )
+
+            db.session.commit()
+
+            # ---------------------
+            # 初回発言をタイトル化
+            # ---------------------
+
+            if (
+
+                conversation.title
+                == "新しいチャット"
+
+                and history
+
+            ):
+
+                first_text = history[-1].get(
+
+                    "content",
+
+                    ""
+
+                )
+
+                if first_text.strip():
+
+                    conversation.title = (
+
+                        first_text[:30]
+
+                    )
+
+                    db.session.commit()
+
+        # ---------------------
+        # レスポンス
+        # ---------------------
+
         return jsonify({
+
             "success": True,
+
             "message": answer
+
         })
 
     except Exception as e:
@@ -885,8 +1039,11 @@ def chat():
         print(e)
 
         return jsonify({
+
             "success": False,
+
             "message": str(e)
+
         }), 500
 # =========================
 # 起動

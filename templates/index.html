@@ -94,6 +94,8 @@ input, textarea, select { width:100%; margin:6px 0; }
 let history = [];
 let images = [];
 
+let conversationId = null;
+
 document.getElementById("image").addEventListener("change", function(e){
 
     images = [];
@@ -125,7 +127,18 @@ function add(text, type){
 }
 
 async function start() {
+const newChat = await fetch(
+    "/conversation/new",
+    {
+        method: "POST"
+    }
+);
 
+const newChatData =
+    await newChat.json();
+
+conversationId =
+    newChatData.conversation_id;
     // チャットをリセット
     document.getElementById("chat").innerHTML = "";
 
@@ -138,7 +151,7 @@ async function start() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-
+            conversation_id: conversationId,
             personality: document.getElementById("personality").value,
 
             prototype_url: document.getElementById("url").value,
@@ -202,6 +215,7 @@ async function send(){
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({
+            conversation_id: conversationId,
             personality: document.getElementById("personality").value,
             prototype_url: document.getElementById("url").value,
             questions: document.getElementById("questions")

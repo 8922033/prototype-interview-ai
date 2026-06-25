@@ -255,8 +255,6 @@ def build_system_prompt(personality, questions, url):
         personality_text = """
 【インタビュイーのペルソナ】
 
-・女性
-・東京理科大学経営学部2年生
 ・自分から話すことが多い
 ・初対面の人とも仲良くなれる
 ・思い立ったことをすぐ口に出す

@@ -248,7 +248,7 @@ def get_conversation(
 # システムプロンプト生成
 # =========================
 
-def build_system_prompt(personality, questions, url ,elapsed_minutes=30):
+def build_system_prompt(personality, questions, url ,elapsed_minutes,completed_questions): 
 
     if personality == "active":
 
@@ -334,6 +334,8 @@ def build_system_prompt(personality, questions, url ,elapsed_minutes=30):
 ・最後は「他に気になったことや改善案はありますか？」など自由回答を促し、自然に終了する。
 【インタビュー時間とその対応】
 経過時間：約{elapsed_minutes}分
+質問進捗：
+{completed_questions}/{len(questions)}問完了
 想定終了時間：30分
 現在の経過時間を考慮しながらインタビューを進行してください。
 ・30分程度で自然に終了できるよう進行を調整してください。

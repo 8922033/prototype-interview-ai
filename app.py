@@ -248,7 +248,7 @@ def get_conversation(
 # システムプロンプト生成
 # =========================
 
-def build_system_prompt(personality, questions, url ,elapsed_minutes): 
+def build_system_prompt(personality, questions, url ,elapsed_minutes=30): 
 
     if personality == "active":
 
